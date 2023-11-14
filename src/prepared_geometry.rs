@@ -24,12 +24,11 @@ use std::sync::Arc;
 ///
 /// assert_eq!(prepared_geom.contains(&geom2), Ok(true));
 /// ```
-pub struct PreparedGeometry<'a> {
+pub struct PreparedGeometry {
     ptr: PtrWrap<*const GEOSPreparedGeometry>,
-    context: Arc<ContextHandle<'a>>,
 }
 
-impl<'a> PreparedGeometry<'a> {
+impl PreparedGeometry {
     /// Creates a new `PreparedGeometry` from a [`Geometry`](crate::Geometry).
     ///
     /// # Example
@@ -41,7 +40,7 @@ impl<'a> PreparedGeometry<'a> {
     ///                      .expect("Invalid geometry");
     /// let prepared_geom = PreparedGeometry::new(&geom1);
     /// ```
-    pub fn new<'b: 'a, G: Geom<'b>>(g: &'a G) -> GResult<PreparedGeometry<'a>> {
+    pub fn new<G: Geom>(g: &G) -> GResult<PreparedGeometry> {
         unsafe {
             let ptr = GEOSPrepare_r(g.get_raw_context(), g.as_raw());
             PreparedGeometry::new_from_raw(ptr, transmute(g.clone_context()), "new")
@@ -50,9 +49,9 @@ impl<'a> PreparedGeometry<'a> {
 
     pub(crate) unsafe fn new_from_raw(
         ptr: *const GEOSPreparedGeometry,
-        context: Arc<ContextHandle<'a>>,
+        context: Arc<ContextHandle>,
         caller: &str,
-    ) -> GResult<PreparedGeometry<'a>> {
+    ) -> GResult<PreparedGeometry> {
         if ptr.is_null() {
             let extra = if let Some(x) = context.get_last_error() {
                 format!("\nLast error: {x}")
@@ -349,16 +348,16 @@ impl<'a> PreparedGeometry<'a> {
     }
 }
 
-unsafe impl<'a> Send for PreparedGeometry<'a> {}
-unsafe impl<'a> Sync for PreparedGeometry<'a> {}
+unsafe impl Send for PreparedGeometry {}
+unsafe impl Sync for PreparedGeometry {}
 
-impl<'a> Drop for PreparedGeometry<'a> {
+impl Drop for PreparedGeometry {
     fn drop(&mut self) {
         unsafe { GEOSPreparedGeom_destroy_r(self.get_raw_context(), self.as_raw()) };
     }
 }
 
-impl<'a> ContextInteractions<'a> for PreparedGeometry<'a> {
+impl ContextInteractions for PreparedGeometry {
     /// Set the context handle to the `PreparedGeometry`.
     ///
     /// ```
@@ -377,7 +376,7 @@ impl<'a> ContextInteractions<'a> for PreparedGeometry<'a> {
     /// );
     /// prepared_geom.set_context_handle(context_handle);
     /// ```
-    fn set_context_handle(&mut self, context: ContextHandle<'a>) {
+    fn set_context_handle(&mut self, context: ContextHandle) {
         self.context = Arc::new(context);
     }
 
@@ -396,12 +395,12 @@ impl<'a> ContextInteractions<'a> for PreparedGeometry<'a> {
     /// let context = prepared_geom.get_context_handle();
     /// context.set_notice_message_handler(Some(Box::new(|s| println!("new message: {}", s))));
     /// ```
-    fn get_context_handle(&self) -> &ContextHandle<'a> {
+    fn get_context_handle(&self) -> &ContextHandle {
         &self.context
     }
 }
 
-impl<'a> AsRaw for PreparedGeometry<'a> {
+impl AsRaw for PreparedGeometry {
     type RawType = GEOSPreparedGeometry;
 
     fn as_raw(&self) -> *const Self::RawType {
@@ -409,14 +408,14 @@ impl<'a> AsRaw for PreparedGeometry<'a> {
     }
 }
 
-impl<'a> ContextHandling for PreparedGeometry<'a> {
-    type Context = Arc<ContextHandle<'a>>;
+impl ContextHandling for PreparedGeometry {
+    type Context = Arc<ContextHandle>;
 
     fn get_raw_context(&self) -> GEOSContextHandle_t {
         self.context.as_raw()
     }
 
-    fn clone_context(&self) -> Arc<ContextHandle<'a>> {
+    fn clone_context(&self) -> Arc<ContextHandle> {
         Arc::clone(&self.context)
     }
 }

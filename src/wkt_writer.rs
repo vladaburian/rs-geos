@@ -7,7 +7,6 @@ use crate::{
 };
 use geos_sys::*;
 use std::convert::TryFrom;
-use std::marker::PhantomData;
 
 /// The `WKTWriter` type is used to generate `WKT` formatted output from [`Geometry`](crate::Geometry).
 ///
@@ -21,12 +20,11 @@ use std::marker::PhantomData;
 ///
 /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (2.5000000000000000 2.5000000000000000)");
 /// ```
-pub struct WKTWriter<'a> {
+pub struct WKTWriter {
     ptr: PtrWrap<*mut GEOSWKTWriter>,
-    phantom: PhantomData<&'a()>,
 }
 
-impl<'a> WKTWriter<'a> {
+impl WKTWriter {
     /// Creates a new `WKTWriter` instance.
     ///
     /// # Example
@@ -39,7 +37,7 @@ impl<'a> WKTWriter<'a> {
     ///
     /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (2.5000000000000000 2.5000000000000000)");
     /// ```
-    pub fn new() -> GResult<WKTWriter<'a>> {
+    pub fn new() -> GResult<WKTWriter> {
         with_context(|ctx| unsafe {
             let ptr = GEOSWKTWriter_create_r(ctx.as_raw());
             WKTWriter::new_from_raw(ptr, ctx, "new_with_context")
@@ -50,7 +48,7 @@ impl<'a> WKTWriter<'a> {
         ptr: *mut GEOSWKTWriter,
         ctx: &ContextHandle,
         caller: &str,
-    ) -> GResult<WKTWriter<'a>> {
+    ) -> GResult<WKTWriter> {
         if ptr.is_null() {
             let extra = if let Some(x) = ctx.get_last_error() {
                 format!("\nLast error: {x}")
@@ -63,7 +61,6 @@ impl<'a> WKTWriter<'a> {
         }
         Ok(WKTWriter {
             ptr: PtrWrap(ptr),
-            phantom: PhantomData,
         })
     }
 
@@ -79,7 +76,7 @@ impl<'a> WKTWriter<'a> {
     ///
     /// assert_eq!(writer.write(&point_geom).unwrap(), "POINT (2.5000000000000000 2.5000000000000000)");
     /// ```
-    pub fn write<'b, G: Geom<'b>>(&mut self, geometry: &G) -> GResult<String> {
+    pub fn write<G: Geom>(&mut self, geometry: &G) -> GResult<String> {
         with_context(|ctx| unsafe {
             let ptr = GEOSWKTWriter_write_r(ctx.as_raw(), self.as_raw_mut(), geometry.as_raw());
             managed_string(ptr, ctx, "WKTWriter::write")
@@ -209,16 +206,16 @@ impl<'a> WKTWriter<'a> {
     }
 }
 
-unsafe impl<'a> Send for WKTWriter<'a> {}
-unsafe impl<'a> Sync for WKTWriter<'a> {}
+unsafe impl Send for WKTWriter {}
+unsafe impl Sync for WKTWriter {}
 
-impl<'a> Drop for WKTWriter<'a> {
+impl Drop for WKTWriter {
     fn drop(&mut self) {
         with_context(|ctx| unsafe { GEOSWKTWriter_destroy_r(ctx.as_raw(), self.as_raw_mut()) });
     }
 }
 
-impl<'a> AsRaw for WKTWriter<'a> {
+impl AsRaw for WKTWriter {
     type RawType = GEOSWKTWriter;
 
     fn as_raw(&self) -> *const Self::RawType {
@@ -226,7 +223,7 @@ impl<'a> AsRaw for WKTWriter<'a> {
     }
 }
 
-impl<'a> AsRawMut for WKTWriter<'a> {
+impl AsRawMut for WKTWriter {
     type RawType = GEOSWKTWriter;
 
     unsafe fn as_raw_mut_override(&self) -> *mut Self::RawType {

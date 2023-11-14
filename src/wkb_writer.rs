@@ -5,7 +5,6 @@ use crate::{AsRaw, AsRawMut, ContextHandle, GResult, Geom};
 use c_vec::CVec;
 use geos_sys::*;
 use std::convert::TryFrom;
-use std::marker::PhantomData;
 
 /// The `WKBWriter` type is used to generate `HEX` or `WKB` formatted output from [`Geometry`](crate::Geometry).
 ///
@@ -27,12 +26,11 @@ use std::marker::PhantomData;
 /// assert_eq!(Geometry::new_from_hex(&v).unwrap().to_wkt_precision(1).unwrap(),
 ///            "POINT (2.5 2.5)");
 /// ```
-pub struct WKBWriter<'a> {
+pub struct WKBWriter {
     ptr: PtrWrap<*mut GEOSWKBWriter>,
-    phantom: PhantomData<&'a()>,
 }
 
-impl<'a> WKBWriter<'a> {
+impl WKBWriter {
     /// Creates a new `WKBWriter` instance.
     ///
     /// # Example
@@ -47,7 +45,7 @@ impl<'a> WKBWriter<'a> {
     /// assert_eq!(Geometry::new_from_wkb(&v).unwrap().to_wkt_precision(1).unwrap(),
     ///            "POINT (2.5 2.5)");
     /// ```
-    pub fn new() -> GResult<WKBWriter<'a>> {
+    pub fn new() -> GResult<WKBWriter> {
         with_context(|ctx| unsafe {
             let ptr = GEOSWKBWriter_create_r(ctx.as_raw());
             WKBWriter::new_from_raw(ptr, ctx, "new_with_context")
@@ -58,7 +56,7 @@ impl<'a> WKBWriter<'a> {
         ptr: *mut GEOSWKBWriter,
         ctx: &ContextHandle,
         caller: &str,
-    ) -> GResult<WKBWriter<'a>> {
+    ) -> GResult<WKBWriter> {
         if ptr.is_null() {
             let extra = if let Some(x) = ctx.get_last_error() {
                 format!("\nLast error: {x}")
@@ -71,7 +69,6 @@ impl<'a> WKBWriter<'a> {
         }
         Ok(WKBWriter {
             ptr: PtrWrap(ptr),
-            phantom: PhantomData,
         })
     }
 
@@ -89,7 +86,7 @@ impl<'a> WKBWriter<'a> {
     /// let expected = vec![1u8, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 64, 0, 0, 0, 0, 0, 0, 4, 64];
     /// assert_eq!(v, expected);
     /// ```
-    pub fn write_wkb<'b, G: Geom<'b>>(&mut self, geometry: &G) -> GResult<CVec<u8>> {
+    pub fn write_wkb<G: Geom>(&mut self, geometry: &G) -> GResult<CVec<u8>> {
         let mut size = 0;
         with_context(|ctx| unsafe {
             let ptr = GEOSWKBWriter_write_r(
@@ -124,7 +121,7 @@ impl<'a> WKBWriter<'a> {
     ///                     52,52,48,48,48,48,48,48,48,48,48,48,48,48,48,48,52,52,48];
     /// assert_eq!(v, expected);
     /// ```
-    pub fn write_hex<'b, G: Geom<'b>>(&mut self, geometry: &G) -> GResult<CVec<u8>> {
+    pub fn write_hex<G: Geom>(&mut self, geometry: &G) -> GResult<CVec<u8>> {
         let mut size = 0;
         with_context(|ctx| unsafe {
             let ptr = GEOSWKBWriter_writeHEX_r(
@@ -290,10 +287,10 @@ impl<'a> WKBWriter<'a> {
     }
 }
 
-unsafe impl<'a> Send for WKBWriter<'a> {}
-unsafe impl<'a> Sync for WKBWriter<'a> {}
+unsafe impl Send for WKBWriter {}
+unsafe impl Sync for WKBWriter {}
 
-impl<'a> Drop for WKBWriter<'a> {
+impl Drop for WKBWriter {
     fn drop(&mut self) {
         with_context(|ctx| unsafe {
             GEOSWKBWriter_destroy_r(ctx.as_raw(), self.as_raw_mut())
@@ -301,7 +298,7 @@ impl<'a> Drop for WKBWriter<'a> {
     }
 }
 
-impl<'a> AsRaw for WKBWriter<'a> {
+impl AsRaw for WKBWriter {
     type RawType = GEOSWKBWriter;
 
     fn as_raw(&self) -> *const Self::RawType {
@@ -309,7 +306,7 @@ impl<'a> AsRaw for WKBWriter<'a> {
     }
 }
 
-impl<'a> AsRawMut for WKBWriter<'a> {
+impl AsRawMut for WKBWriter {
     type RawType = GEOSWKBWriter;
 
     unsafe fn as_raw_mut_override(&self) -> *mut Self::RawType {

@@ -3,7 +3,6 @@ use crate::error::{Error, GResult};
 use crate::{AsRaw, AsRawMut, ContextHandle, CoordDimensions,Geometry, Ordinate,};
 use geos_sys::*;
 use std::convert::TryFrom;
-use std::marker::PhantomData;
 
 #[cfg(feature = "v3_10_0")]
 type AsArrayOutput = (Vec<f64>, Vec<f64>, Option<Vec<f64>>, Option<Vec<f64>>);
@@ -20,14 +19,13 @@ type AsArrayOutput = (Vec<f64>, Vec<f64>, Option<Vec<f64>>, Option<Vec<f64>>);
 /// coords.set_x(0, 10.);
 /// assert_eq!(coords.get_x(0), Ok(10.));
 /// ```
-pub struct CoordSeq<'a> {
+pub struct CoordSeq {
     pub(crate) ptr: PtrWrap<*mut GEOSCoordSequence>,
     nb_dimensions: usize,
     nb_lines: usize,
-    phantom: PhantomData<&'a()>,
 }
 
-impl<'a> CoordSeq<'a> {
+impl CoordSeq {
     /// Creates a new `CoordSeq`.
     ///
     /// # Example
@@ -57,7 +55,7 @@ impl<'a> CoordSeq<'a> {
     /// }
     /// assert_eq!(coord_seq2.get_x(1), Ok(1.));
     /// ```
-    pub fn new(size: u32, dims: CoordDimensions) -> GResult<CoordSeq<'a>> {
+    pub fn new(size: u32, dims: CoordDimensions) -> GResult<CoordSeq> {
         with_context(|ctx| unsafe {
             let ptr = GEOSCoordSeq_create_r(ctx.as_raw(), size, dims.into());
             CoordSeq::new_from_raw(ptr, ctx, size, dims.into(), "new")
@@ -89,7 +87,7 @@ impl<'a> CoordSeq<'a> {
     /// let x: &[f64] = &[];
     /// assert!(CoordSeq::new_from_vec(&[x]).is_err());
     /// ```
-    pub fn new_from_vec<T: AsRef<[f64]>>(data: &[T]) -> GResult<CoordSeq<'a>> {
+    pub fn new_from_vec<T: AsRef<[f64]>>(data: &[T]) -> GResult<CoordSeq> {
         let size = data.len();
 
         if size > 0 {
@@ -174,7 +172,7 @@ impl<'a> CoordSeq<'a> {
         size: usize,
         has_z: bool,
         has_m: bool,
-    ) -> GResult<CoordSeq<'a>> {
+    ) -> GResult<CoordSeq> {
         let mut dims: u32 = 2;
         if has_z {
             dims += 1;
@@ -230,7 +228,7 @@ impl<'a> CoordSeq<'a> {
         y: &[f64],
         z: Option<&[f64]>,
         m: Option<&[f64]>,
-    ) -> GResult<CoordSeq<'a>> {
+    ) -> GResult<CoordSeq> {
         assert_eq!(x.len(), y.len(), "Arrays have different lengths.");
 
         let mut dims: u32 = 2;
@@ -274,7 +272,7 @@ impl<'a> CoordSeq<'a> {
         size: u32,
         dims: u32,
         caller: &str,
-    ) -> GResult<CoordSeq<'a>> {
+    ) -> GResult<CoordSeq> {
         if ptr.is_null() {
             let extra = if let Some(x) = context.get_last_error() {
                 format!("\nLast error: {x}")
@@ -289,7 +287,6 @@ impl<'a> CoordSeq<'a> {
             ptr: PtrWrap(ptr),
             nb_dimensions: dims as _,
             nb_lines: size as _,
-            phantom: PhantomData,
         })
     }
 
@@ -806,7 +803,7 @@ impl<'a> CoordSeq<'a> {
     ///
     /// assert_eq!(geom.to_wkt().unwrap(), "POINT (1.0000000000000000 2.0000000000000000)");
     /// ```
-    pub fn create_point(self) -> GResult<Geometry<'a>> {
+    pub fn create_point(self) -> GResult<Geometry> {
         Geometry::create_point(self)
     }
 
@@ -826,20 +823,20 @@ impl<'a> CoordSeq<'a> {
     ///            "LINESTRING (1.0000000000000000 2.0000000000000000, \
     ///                         3.0000000000000000 4.0000000000000000)");
     /// ```
-    pub fn create_line_string(self) -> GResult<Geometry<'a>> {
+    pub fn create_line_string(self) -> GResult<Geometry> {
         Geometry::create_line_string(self)
     }
 
     /// Creates a linear ring geometry.
-    pub fn create_linear_ring(self) -> GResult<Geometry<'a>> {
+    pub fn create_linear_ring(self) -> GResult<Geometry> {
         Geometry::create_linear_ring(self)
     }
 }
 
-unsafe impl<'a> Send for CoordSeq<'a> {}
-unsafe impl<'a> Sync for CoordSeq<'a> {}
+unsafe impl Send for CoordSeq {}
+unsafe impl Sync for CoordSeq {}
 
-impl<'a> Drop for CoordSeq<'a> {
+impl Drop for CoordSeq {
     fn drop(&mut self) {
         if self.ptr.is_null() {
             return;
@@ -848,9 +845,9 @@ impl<'a> Drop for CoordSeq<'a> {
     }
 }
 
-impl<'a> Clone for CoordSeq<'a> {
+impl Clone for CoordSeq {
     /// Also pass the context to the newly created `CoordSeq`.
-    fn clone(&self) -> CoordSeq<'a> {
+    fn clone(&self) -> CoordSeq {
         let ptr = with_context(|ctx| unsafe { GEOSCoordSeq_clone_r(ctx.as_raw(), self.as_raw()) });
         if ptr.is_null() {
             panic!("Couldn't clone CoordSeq...");
@@ -859,12 +856,11 @@ impl<'a> Clone for CoordSeq<'a> {
             ptr: PtrWrap(ptr),
             nb_dimensions: self.nb_dimensions,
             nb_lines: self.nb_lines,
-            phantom: PhantomData,
         }
     }
 }
 
-impl<'a> AsRaw for CoordSeq<'a> {
+impl AsRaw for CoordSeq {
     type RawType = GEOSCoordSequence;
 
     fn as_raw(&self) -> *const Self::RawType {
@@ -872,7 +868,7 @@ impl<'a> AsRaw for CoordSeq<'a> {
     }
 }
 
-impl<'a> AsRawMut for CoordSeq<'a> {
+impl AsRawMut for CoordSeq {
     type RawType = GEOSCoordSequence;
 
     unsafe fn as_raw_mut_override(&self) -> *mut Self::RawType {

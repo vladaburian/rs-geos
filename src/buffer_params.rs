@@ -1,4 +1,3 @@
-use std::marker::PhantomData;
 use crate::context_handle::{PtrWrap, with_context};
 use crate::enums::CapStyle;
 use crate::{AsRaw, AsRawMut, Error, GResult, JoinStyle,};
@@ -6,9 +5,8 @@ use crate::{AsRaw, AsRawMut, Error, GResult, JoinStyle,};
 use geos_sys::*;
 
 /// Contains the parameters which describe how a [Geometry](crate::Geometry) buffer should be constructed using [buffer_with_params](crate::Geom::buffer_with_params)
-pub struct BufferParams<'a> {
+pub struct BufferParams {
     ptr: PtrWrap<*mut GEOSBufferParams>,
-    phantom: PhantomData<&'a()>,
 }
 
 /// Build options for a [`BufferParams`] object
@@ -21,13 +19,12 @@ pub struct BufferParamsBuilder {
     single_sided: Option<bool>,
 }
 
-impl<'a> BufferParams<'a> {
-    pub fn new() -> GResult<BufferParams<'a>> {
+impl BufferParams {
+    pub fn new() -> GResult<BufferParams> {
         with_context(|ctx| unsafe {
             let ptr = GEOSBufferParams_create_r(ctx.as_raw());
             Ok(BufferParams {
-                ptr: PtrWrap(ptr),
-                phantom: PhantomData,
+                ptr: PtrWrap(ptr)
             })
         })
     }
@@ -159,10 +156,10 @@ impl<'a> BufferParams<'a> {
     }
 }
 
-unsafe impl<'a> Send for BufferParams<'a> {}
-unsafe impl<'a> Sync for BufferParams<'a> {}
+unsafe impl Send for BufferParams {}
+unsafe impl Sync for BufferParams {}
 
-impl<'a> Drop for BufferParams<'a> {
+impl Drop for BufferParams {
     fn drop(&mut self) {
         if !self.ptr.is_null() {
             with_context(|ctx| unsafe { GEOSBufferParams_destroy_r(ctx.as_raw(), self.as_raw_mut()) });
@@ -170,7 +167,7 @@ impl<'a> Drop for BufferParams<'a> {
     }
 }
 
-impl<'a> AsRaw for BufferParams<'a> {
+impl AsRaw for BufferParams {
     type RawType = GEOSBufferParams;
 
     fn as_raw(&self) -> *const Self::RawType {
@@ -178,7 +175,7 @@ impl<'a> AsRaw for BufferParams<'a> {
     }
 }
 
-impl<'a> AsRawMut for BufferParams<'a> {
+impl AsRawMut for BufferParams {
     type RawType = GEOSBufferParams;
 
     unsafe fn as_raw_mut_override(&self) -> *mut Self::RawType {
@@ -207,7 +204,7 @@ impl BufferParamsBuilder {
         self.single_sided = Some(is_single_sided);
         self
     }
-    pub fn build(self) -> GResult<BufferParams<'static>> {
+    pub fn build(self) -> GResult<BufferParams> {
         let mut params = BufferParams::new()?;
         if let Some(style) = self.end_cap_style {
             params.set_end_cap_style(style)?;
