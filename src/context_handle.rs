@@ -8,6 +8,14 @@ use std::ops::Deref;
 use std::slice;
 use std::sync::Mutex;
 
+thread_local!(
+    static CONTEXT: ContextHandle<'static> = ContextHandle::init().unwrap();
+);
+
+pub(crate) fn with_context<R>(f: impl FnOnce(&ContextHandle) -> R) -> R {
+    CONTEXT.with(f)
+}
+
 pub type HandlerCallback<'a> = Box<dyn Fn(&str) + Send + Sync + 'a>;
 
 macro_rules! set_callbacks {
