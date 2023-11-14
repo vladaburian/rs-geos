@@ -6,8 +6,10 @@ use crate::functions::*;
 use crate::Precision;
 use crate::{
     AsRaw, AsRawMut, BufferParams, ContextHandle, ContextHandling, ContextInteractions, CoordSeq,
-    PreparedGeometry, WKTWriter,
+    WKTWriter,
 };
+#[cfg(wip)]
+use crate::PreparedGeometry;
 use c_vec::CVec;
 use geos_sys::*;
 use std::borrow::Borrow;
@@ -1345,6 +1347,7 @@ pub trait Geom<'a>:
     ///                           .expect("Invalid geometry");
     /// let prepared_geom = point_geom.to_prepared_geom().expect("failed to create prepared geom");
     /// ```
+    #[cfg(wip)]
     #[allow(clippy::needless_lifetimes)]
     fn to_prepared_geom<'c>(&'c self) -> GResult<PreparedGeometry<'c>>;
     /// Also passes the context to the newly created `Geometry`.
@@ -2285,6 +2288,7 @@ impl<'a$(, $lt)?> Geom<'a> for $ty_name<'a$(, $lt)?> {
         }
     }
 
+    #[cfg(wip)]
     #[allow(clippy::needless_lifetimes)]
     fn to_prepared_geom<'c>(&'c self) -> GResult<PreparedGeometry<'c>> {
         PreparedGeometry::new(self)

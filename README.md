@@ -33,6 +33,7 @@ assert_eq!(
 
 ### "Preparing" the geometries for faster predicates (intersects, contains, etc.) computation on repetitive calls:
 
+<!--
 ```rust
 let g1 = geos::Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))")
                         .expect("invalid WKT");
@@ -44,6 +45,7 @@ let pg1 = geos::PreparedGeometry::new(&g1)
 let result = pg1.intersects(&g2).expect("intersects failed");
 assert_eq!(result, true);
 ```
+-->
 
 ### Conversion from [geo](https://github.com/georust/geo)
 

@@ -1,5 +1,7 @@
 use crate::enums::GeometryTypes;
-use crate::{Geom, Geometry, PreparedGeometry};
+use crate::{Geom, Geometry};
+#[cfg(wip)]
+use crate::PreparedGeometry;
 
 #[test]
 fn test_relationship() {
@@ -57,6 +59,7 @@ fn test_geom_creation_from_geoms() {
     assert_eq!(GeometryTypes::Polygon, g5.geometry_type());
 }
 
+#[cfg(wip)]
 #[test]
 fn test_prepared_geoms() {
     let g1 = Geometry::new_from_wkt("POLYGON ((0 0, 0 5, 5 5, 5 0, 0 0))").unwrap();

@@ -25,7 +25,9 @@ pub use enums::{
 pub use functions::segment_intersection;
 pub use functions::{orientation_index, version};
 pub use geometry::{ConstGeometry, Geom, Geometry};
+#[cfg(wip)]
 pub use prepared_geometry::PreparedGeometry;
+#[cfg(wip)]
 pub use spatial_index::{STRtree, SpatialIndex};
 pub use wkb_writer::WKBWriter;
 pub use wkt_writer::WKTWriter;
@@ -39,7 +41,9 @@ pub mod from_geo;
 #[cfg(feature = "json")]
 pub mod from_geojson;
 mod geometry;
+#[cfg(wip)]
 mod prepared_geometry;
+#[cfg(wip)]
 mod spatial_index;
 #[cfg(any(feature = "geo", feature = "dox"))]
 pub mod to_geo;
